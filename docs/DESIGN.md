@@ -79,4 +79,34 @@ Rows are inserted with `insert_all` in batches of 1,000.
 | No auth | Devise / SSO | Single persona; documented as first follow-up. |
 
 ## Performance notes
-See the numbers recorded in the README after seeding and load checks.
+Measured locally on the 10,000-employee seed (development mode, single request, warm):
+
+| Request | Time |
+|---------|------|
+| Seed 10,000 employees (`insert_all`, batches of 1,000) | ~2.3 s |
+| `GET /employees` page 1 | 28 ms |
+| `GET /employees?q=sharma&country=IN&sort=salary&direction=desc` | 32 ms |
+| `GET /employees?page=400` (deep offset) | 43 ms |
+| `GET /insights/countries` (incl. median per country) | 52 ms |
+| `GET /insights/countries/IN/job_titles` | 37 ms |
+| `GET /insights/departments` / `summary` / `meta` | 22–25 ms |
+
+Why it stays fast:
+- Every insight is a single aggregate query (`GROUP BY` + `PERCENTILE_CONT`). Ruby never loads the rows.
+- Filters and sorts hit indexed columns. The composite `(country_code, job_title)` index covers
+  the job-title drill-down.
+- `per_page` is capped at 100, and serialization has no N+1 (country data comes from memory, not a join).
+- Frontend: TanStack Query caches responses and keeps the previous page on screen while the next one
+  loads. Search is debounced (300 ms). The charting library is lazy-loaded with the Insights page.
+
+At ~1M rows, the next steps would be keyset pagination for deep pages, a `pg_trgm` index for
+search, and caching or materializing the insight aggregates (they only change when salaries do).
+
+## Known limitations & next steps
+1. **Authentication** (SSO for HR staff) and an **audit trail / salary history** table, since
+   salary changes should be traceable.
+2. **CSV import/export** to migrate off the existing Excel files.
+3. **Part-time pay skews ranges.** Part-time salaries are stored pro-rated, so they pull down role
+   minimums. Add an FTE-adjusted view or a full-time-only filter on Insights.
+4. **FX rates** are fixed in `config/countries.yml`. If finance needs historical accuracy, store
+   rates with an effective date.
