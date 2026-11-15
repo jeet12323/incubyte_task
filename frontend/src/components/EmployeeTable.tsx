@@ -90,7 +90,12 @@ export function EmployeeTable({ employees, sort, onSortChange, onEdit, onDelete 
                 )}
               </Table.Td>
               <Table.Td>
-                <Badge variant="light" color={employee.employment_type === 'full_time' ? 'indigo' : 'gray'}>
+                <Badge
+                  variant="light"
+                  tt="none"
+                  styles={{ root: { overflow: 'visible' }, label: { overflow: 'visible' } }}
+                  color={employee.employment_type === 'full_time' ? 'indigo' : 'gray'}
+                >
                   {EMPLOYMENT_TYPE_LABELS[employee.employment_type]}
                 </Badge>
               </Table.Td>

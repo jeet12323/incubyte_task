@@ -1,9 +1,12 @@
-import { AppShell, Burger, Group, NavLink, Text, ThemeIcon } from '@mantine/core'
+import { AppShell, Burger, Center, Group, Loader, NavLink, Text, ThemeIcon } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconChartBar, IconCoin, IconUsers } from '@tabler/icons-react'
+import { lazy, Suspense } from 'react'
 import { Navigate, NavLink as RouterNavLink, Route, Routes } from 'react-router-dom'
 import { EmployeesPage } from './pages/EmployeesPage'
-import { InsightsPage } from './pages/InsightsPage'
+
+// The charting library is heavy; only load it when the HR manager opens Insights.
+const InsightsPage = lazy(() => import('./pages/InsightsPage').then((m) => ({ default: m.InsightsPage })))
 
 const NAV_ITEMS = [
   { to: '/employees', label: 'Employees', icon: IconUsers },
@@ -46,7 +49,20 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/employees" replace />} />
           <Route path="/employees" element={<EmployeesPage />} />
-          <Route path="/insights" element={<InsightsPage />} />
+          <Route
+            path="/insights"
+            element={
+              <Suspense
+                fallback={
+                  <Center h={200}>
+                    <Loader />
+                  </Center>
+                }
+              >
+                <InsightsPage />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<Navigate to="/employees" replace />} />
         </Routes>
       </AppShell.Main>
