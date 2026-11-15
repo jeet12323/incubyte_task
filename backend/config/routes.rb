@@ -14,4 +14,8 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  # Everything that isn't the API or a static file is a client-side route of the React app.
+  get "*path", to: "spa#index", constraints: ->(request) { !request.path.start_with?("/api/") && request.format.html? }
+  root "spa#index"
 end

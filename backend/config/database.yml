@@ -1,20 +1,23 @@
-# Local defaults point at a dev Postgres; override with DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD.
-# Production uses DATABASE_URL (set by Render).
+# Development/test connect to a local Postgres; override with DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD.
+# Production reads everything from DATABASE_URL (provided by Render).
 default: &default
   adapter: postgresql
   encoding: unicode
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+local: &local
+  <<: *default
   host: <%= ENV.fetch("DB_HOST", "127.0.0.1") %>
   port: <%= ENV.fetch("DB_PORT", 5434) %>
   username: <%= ENV.fetch("DB_USERNAME", "postgres") %>
   password: <%= ENV["DB_PASSWORD"] %>
 
 development:
-  <<: *default
+  <<: *local
   database: acme_salaries_development
 
 test:
-  <<: *default
+  <<: *local
   database: acme_salaries_test
 
 production:
