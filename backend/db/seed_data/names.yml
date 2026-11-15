@@ -1,0 +1,16 @@
+# First/last names by locale, so seeded people look plausible for their country.
+english:
+  first: [James, Mary, Robert, Patricia, John, Jennifer, Michael, Linda, David, Elizabeth, William, Barbara, Richard, Susan, Joseph, Jessica, Thomas, Sarah, Charles, Karen, Daniel, Emily, Matthew, Olivia, Andrew, Sophie, Ryan, Chloe, Liam, Grace]
+  last: [Smith, Johnson, Williams, Brown, Jones, Miller, Davis, Wilson, Anderson, Taylor, Thomas, Moore, Martin, Jackson, Thompson, White, Harris, Clark, Lewis, Walker, Hall, Young, King, Wright, Scott, Green, Baker, Adams, Nelson, Campbell]
+indian:
+  first: [Aarav, Priya, Rohan, Ananya, Vikram, Isha, Arjun, Kavya, Rahul, Sneha, Aditya, Pooja, Karan, Neha, Siddharth, Divya, Amit, Riya, Varun, Meera, Nikhil, Shreya, Yash, Aditi, Harsh, Tanvi, Kunal, Nisha, Manish, Jeet]
+  last: [Sharma, Patel, Iyer, Reddy, Nair, Gupta, Singh, Kumar, Mehta, Shah, Joshi, Rao, Desai, Kapoor, Chopra, Banerjee, Menon, Pillai, Verma, Agarwal, Bhatt, Kulkarni, Malhotra, Saxena, Trivedi, Pandey, Mishra, Chatterjee, Arya, Bose]
+german:
+  first: [Lukas, Anna, Leon, Mia, Felix, Lena, Jonas, Laura, Paul, Hannah, Maximilian, Lea, Tim, Sophie, Jan, Julia, Niklas, Marie, Moritz, Katharina]
+  last: [Müller, Schmidt, Schneider, Fischer, Weber, Meyer, Wagner, Becker, Schulz, Hoffmann, Koch, Richter, Klein, Wolf, Schröder, Neumann, Schwarz, Zimmermann, Braun, Krüger]
+french:
+  first: [Louis, Camille, Hugo, Léa, Gabriel, Manon, Arthur, Chloé, Jules, Inès, Lucas, Sarah, Nathan, Louise, Théo, Jade, Raphaël, Alice, Paul, Juliette]
+  last: [Martin, Bernard, Dubois, Thomas, Robert, Richard, Petit, Durand, Leroy, Moreau, Simon, Laurent, Lefebvre, Michel, Garcia, David, Bertrand, Roux, Vincent, Fournier]
+singaporean:
+  first: [Wei, Mei Ling, Jun Jie, Hui Min, Ravi, Siti, Darren, Grace, Kumar, Nurul, Marcus, Jia Hui, Aaron, Shu Fen, Hafiz, Rachel, Bryan, Xin Yi, Imran, Joanne]
+  last: [Tan, Lim, Lee, Ng, Ong, Wong, Goh, Chua, Chan, Koh, Teo, Ang, Yeo, Tay, Ho, Low, Abdullah, Rahman, Pillai, Chong]
