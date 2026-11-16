@@ -74,13 +74,4 @@ RSpec.describe EmployeeImport do
     expect { described_class.new(header + "a,\"b\n").call }.to raise_error(EmployeeImport::InvalidFile, /not a valid CSV/)
     expect { described_class.new("email\xFF".b).call }.to raise_error(EmployeeImport::InvalidFile, /CSV UTF-8/)
   end
-
-  it "round-trips an export, including names that look like spreadsheet formulas" do
-    create(:employee, full_name: "=HYPERLINK(1)", email: "x@acme.test")
-    exported = EmployeeCsv.generate(Employee.all)
-    Employee.delete_all
-
-    expect(described_class.new(exported).call.created).to eq(1)
-    expect(Employee.last.full_name).to eq("=HYPERLINK(1)")
-  end
 end

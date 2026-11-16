@@ -1,12 +1,12 @@
 require "csv"
 
-# Imports employees from a CSV file (the EmployeeCsv format). Rows are matched on email: a known email
-# updates that employee, a new one creates an employee.
+# Imports employees from a CSV file with the EmployeeSpreadsheet columns. Rows are matched on
+# email: a known email updates that employee, a new one creates an employee.
 #
 # All or nothing: every row is validated first, and if any row is invalid nothing is written and the
 # row-numbered errors are returned so HR can fix the file in Excel and upload it again.
 class EmployeeImport
-  REQUIRED_HEADERS = (EmployeeCsv::HEADERS - [ "currency" ]).freeze
+  REQUIRED_HEADERS = (EmployeeSpreadsheet::HEADERS - [ "currency" ]).freeze
   MAX_ROWS = 20_000
   MAX_ERRORS_REPORTED = 100
   SALARY_FORMAT = /\A\d+(\.\d{1,2})?\z/
@@ -71,7 +71,7 @@ class EmployeeImport
   end
 
   def build(row, existing, seen_emails, line)
-    values = row.transform_values { |value| EmployeeCsv.unescape_formula(value.to_s.strip) }
+    values = row.transform_values { |value| value.to_s.strip }
     email = normalize_email(values["email"])
     messages = []
 
