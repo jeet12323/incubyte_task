@@ -38,6 +38,9 @@ render.yaml
 | employment_type | string, not null | `full_time` / `part_time` / `contract` |
 | hire_date | date, not null | not in the future |
 
+`users`: name, email (unique, case-insensitive), `password_digest` (bcrypt), role
+(`hr_manager` / `viewer`).
+
 **Countries are configuration, not a table.** `config/countries.yml` holds code, name, currency and
 a USD rate. A `Country` value object reads it. Currency is derived from the country, so an employee
 can never have "India + EUR". Adding a country is a one-line config change with a test.
@@ -51,17 +54,62 @@ Composite index `(country_code, job_title)` backs the most common insight query.
 - **`SalaryInsights`** (query object): pure SQL aggregates — `COUNT`, `MIN`, `MAX`, `AVG`,
   `percentile_cont(0.5)` for the median, USD conversion via a `CASE` built from the country config.
   One query per insight, regardless of row count.
-- **Errors:** 404 `{error}`; 422 `{errors: {field: [messages]}}`; 400 for bad params.
+- **`EmployeeCsv` / `EmployeeImport`** (services): one CSV format shared by export and import, so an
+  exported file can be edited in Excel and imported back. See [CSV import & export](#csv-import--export).
+- **Errors:** 401 `{error}` when signed out; 403 for a viewer trying to write; 404 `{error}`;
+  422 `{errors: {field: [messages]}}`; 400 for bad params.
 
 ### API (`/api/v1`)
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | /employees?q=&country=&department=&job_title=&sort=&direction=&page=&per_page= | list |
-| GET/POST/PATCH/DELETE | /employees(/:id) | CRUD |
+| GET/POST/PATCH/DELETE | /employees(/:id) | CRUD (writes: HR Manager only) |
+| GET | /employees/export?…same filters and sort… | CSV download |
+| POST | /employees/import (multipart `file`) | CSV import (HR Manager only) |
+| GET/POST/DELETE | /session | current user / sign in / sign out |
 | GET | /insights/countries | per-country stats |
 | GET | /insights/countries/:code/job_titles | per-title stats in a country |
 | GET | /insights/departments | headcount + USD payroll per department |
 | GET | /meta | countries, departments, job titles for dropdowns |
+
+## Authentication & roles
+- **Session cookie, not tokens.** The SPA is served from the same origin as the API, so sign-in sets an
+  encrypted, `httpOnly`, `SameSite=Lax` Rails session cookie (12-hour expiry). JavaScript can't read
+  it (so XSS can't steal it), and `SameSite=Lax` stops other sites from sending it on cross-site
+  POST/PATCH/DELETE, which covers CSRF for a JSON API. There's no token to store in `localStorage`.
+- **`has_secure_password`** (bcrypt). `User.authenticate_by` takes the same time whether or not the
+  email exists, and both failures return the same message, so sign-in doesn't reveal which emails are
+  registered. The session id is reset on sign-in (session fixation), and sign-in is rate limited
+  (10 attempts / 3 min).
+- **Authorization lives in the API.** `ApplicationController` requires a user for every endpoint;
+  writes (`create`/`update`/`destroy`/`import`) also require `hr_manager` and return 403 otherwise.
+  The UI hides those controls for viewers, but that's convenience, not security.
+- **Frontend:** `AuthGate` loads `GET /session` once and shows the sign-in page until there is a user,
+  then provides it through React context. Any 401 (an expired session) sends the user back to sign-in.
+  Signing out drops all cached salary data from memory.
+- **Demo accounts** (`hr@acme.test`, `viewer@acme.test`) are created idempotently on every deploy
+  and listed on the login page, because the hosted demo has fictional data and reviewers need to get in.
+  A real deployment would use the company's SSO and create no demo accounts.
+
+## CSV import & export
+- **Export** (`GET /employees/export`) applies exactly the directory's filters and sort (no paging) and
+  streams `pluck`ed columns, so all 10k rows come back in ~0.2 s. Cells starting with `=`, `+`, `-`
+  or `@` are prefixed with `'` so Excel doesn't run them as formulas (CSV injection). Import strips
+  that prefix again, so a round trip is lossless.
+- **Import** (`POST /employees/import`, HR Manager only) matches rows on email: a known email updates
+  that employee, a new email creates one. It is **all-or-nothing**: every row is validated with the same
+  model validations as the form, plus checks for duplicate emails within the file, a currency that
+  doesn't match the country, and unambiguous formats (`YYYY-MM-DD` dates, plain numbers). If any row
+  fails, nothing is written and the response lists errors by spreadsheet row number (header = row 1).
+  HR fixes the file and uploads it again, and never has to work out which half was applied.
+- It accepts what Excel produces: a UTF-8 byte-order mark, `
+` line endings, `18,50,000`-style
+  thousands separators, and "Full-time" as well as `full_time`. A non-UTF-8 file gets a clear
+  "save as CSV UTF-8" message.
+- Writes are one transaction: `insert_all!` for new rows, `upsert_all` by id for changed rows, and
+  unchanged rows are skipped. Existing employees are loaded in one query. The per-row email uniqueness
+  query is skipped because the importer matches on email itself, and the unique index still guards the
+  table. Limits: 5 MB, 20,000 rows.
 
 ## Seeding
 `EmployeeSeeder` builds rows with `Random.new(42)` so every run produces the same data. Names come
@@ -76,7 +124,10 @@ Rows are inserted with `insert_all` in batches of 1,000.
 | Country config file | `countries` table + admin UI | Changes rarely; config is versioned and testable. |
 | SQL aggregates | Load rows into Ruby | Constant memory, one round trip, Postgres has `percentile_cont`. |
 | Single service | Separate static host + API | Simpler deploy, no CORS, one URL in the demo. |
-| No auth | Devise / SSO | Single persona; documented as first follow-up. |
+| Cookie session + `has_secure_password` | JWT in `localStorage`, Devise, SSO | Same origin, so an httpOnly cookie is simpler and safer than a token JS can read. Devise brings far more than two roles need. SSO is the real-world answer and the next step. |
+| Two fixed roles on `users.role` | Permissions table / Pundit | Two roles with one rule ("only managers write") fit in one `before_action`. Add a policy layer when rules depend on the record (e.g. by country). |
+| All-or-nothing CSV import | Import valid rows, skip bad ones | A half-applied salary file is worse than a rejected one. HR fixes the listed rows and re-uploads. |
+| CSV | Native `.xlsx` | Excel opens and saves CSV directly; no extra gem, and the format is easy to test. |
 
 ## Performance notes
 Measured locally on the 10,000-employee seed (development mode, single request, warm):
@@ -90,6 +141,8 @@ Measured locally on the 10,000-employee seed (development mode, single request, 
 | `GET /insights/countries` (incl. median per country) | 52 ms |
 | `GET /insights/countries/IN/job_titles` | 37 ms |
 | `GET /insights/departments` / `summary` / `meta` | 22–25 ms |
+| `GET /employees/export` (all 10,001 rows, ~1 MB CSV) | ~220 ms |
+| `POST /employees/import` of that full export (validate 10,001 rows, nothing changed) | ~2.3 s |
 
 Why it stays fast:
 - Every insight is a single aggregate query (`GROUP BY` + `PERCENTILE_CONT`). Ruby never loads the rows.
@@ -103,10 +156,13 @@ At ~1M rows, the next steps would be keyset pagination for deep pages, a `pg_trg
 search, and caching or materializing the insight aggregates (they only change when salaries do).
 
 ## Known limitations & next steps
-1. **Authentication** (SSO for HR staff) and an **audit trail / salary history** table, since
-   salary changes should be traceable.
-2. **CSV import/export** to migrate off the existing Excel files.
+1. **Audit trail / salary history**: record who changed which salary, when, and from what (now
+   possible since every change has a signed-in user). Salary changes should be traceable.
+2. **SSO** instead of passwords, plus user management screens. Finer-grained access (e.g. a viewer
+   limited to their own country) would need a policy layer.
 3. **Part-time pay skews ranges.** Part-time salaries are stored pro-rated, so they pull down role
    minimums. Add an FTE-adjusted view or a full-time-only filter on Insights.
-4. **FX rates** are fixed in `config/countries.yml`. If finance needs historical accuracy, store
+4. **Large imports run in the request.** Fine at 10k rows (~2-3 s). At 100k+ they should move to a
+   background job with progress reporting.
+5. **FX rates** are fixed in `config/countries.yml`. If finance needs historical accuracy, store
    rates with an effective date.

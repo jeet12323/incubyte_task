@@ -15,8 +15,9 @@ was committed.
    run RuboCop/ESLint, commit. The git log follows this order: model → search → CRUD API →
    insights → seeder → UI → deploy.
 3. **Verify against the real thing.** After the unit tests passed I ran the app on the 10k seed and
-   used it in a browser: filters, sorting, the add/edit drawer, the insights drill-down. I also timed
-   every endpoint and booted the app in production mode locally before writing the deploy config.
+   used it in a browser: filters, sorting, the add/edit drawer, the insights drill-down, sign-in as each
+   role, a viewer's write attempt (403), and a full 10k export → import round trip. I also timed every
+   endpoint and booted the app in production mode locally before writing the deploy config.
 
 ## Representative prompts
 
@@ -36,6 +37,14 @@ was committed.
 > Install the prerequisites yourself (Ruby, toolchain, dev database) without touching my
 > existing Postgres credentials.
 
+> Authentication/roles and CSV import/export were in "left out". I think both should be in: salary
+> data shouldn't be visible without signing in, and HR needs a way off Excel. Add them if feasible and
+> update everything.
+
+That last prompt changed the scope after the first version was done. The agent agreed, and argued for
+an httpOnly session cookie instead of a token, two roles enforced in the API, and an all-or-nothing
+import. It then updated the requirements doc rather than only adding code.
+
 ## Where AI output was wrong or needed judgment (and what changed)
 
 | Issue | How it was caught | Fix |
@@ -47,6 +56,10 @@ was committed.
 | Employment-type badge truncated to "FULL…" | Seen in the browser, not by any test | Fixed the badge styles |
 | Insight tests matched country names that also appear in the dropdown | Ambiguous-match failures | Scoped the queries to table rows (closer to what a user actually clicks) |
 | Charting library pushed the main bundle past 500 kB | Vite build warning | Lazy-loaded the Insights page |
+| Signing out crashed to a blank page: the cache was cleared while the header was still reading the user | Using the app in the browser (no test covered sign-out) | Signed-in user is provided through React context from the auth gate. Sign-out sets the session to null before dropping cached data. Added a sign-out test. |
+| Excel's byte-order mark wasn't stripped: a shell one-liner turned the `\uFEFF` escape into a literal `?` | The BOM spec failed with "Missing columns: email" | Edited the file directly. The spec now guards it. |
+| Test helper treated `user: undefined` as "use the default user", so the signed-out test was actually signed in | The signed-out test failed | Explicit `'from-server'` option |
+| Header items wrapped below the bar on a phone; a list in the import dialog overflowed sideways | Checked at 375 px width in the browser | Icon-only sign-out and no role badge on small screens; replaced the list with plain text |
 | Local Postgres needed a password the agent shouldn't handle | Auth failure | Started a separate, local-only dev cluster on port 5434 with trust auth. The system database and its credentials were left alone. |
 
 ## Product observation from using the data
