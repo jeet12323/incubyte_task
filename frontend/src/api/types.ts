@@ -103,7 +103,7 @@ export interface ImportRowError {
   messages: string[]
 }
 
-/** Result of a CSV import. When error_count > 0 nothing was saved. */
+/** Result of an employee import (.xlsx or .csv). When error_count > 0 nothing was saved. */
 export interface ImportResult {
   created: number
   updated: number

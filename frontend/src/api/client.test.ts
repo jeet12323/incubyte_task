@@ -53,7 +53,7 @@ describe('api', () => {
   })
 })
 
-describe('session and CSV', () => {
+describe('session, export and import', () => {
   it('returns null for the current user when signed out', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Please sign in' }, 401))
 

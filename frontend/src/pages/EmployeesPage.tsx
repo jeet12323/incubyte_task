@@ -88,14 +88,14 @@ export function EmployeesPage() {
             download
             variant="default"
             leftSection={<IconDownload size={16} />}
-            title="Download every employee matching the current filters as CSV"
+            title="Download every employee matching the current filters as an Excel workbook"
           >
-            Export CSV
+            Export to Excel
           </Button>
           {canEdit && (
             <>
               <Button variant="default" leftSection={<IconUpload size={16} />} onClick={() => setImportOpen(true)}>
-                Import CSV
+                Import from Excel
               </Button>
               <Button leftSection={<IconPlus size={16} />} onClick={() => setEditor({ mode: 'create' })} disabled={!meta.data}>
                 Add employee

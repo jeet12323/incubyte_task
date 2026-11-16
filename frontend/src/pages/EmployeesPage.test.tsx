@@ -92,12 +92,12 @@ describe('EmployeesPage', () => {
     )
   })
 
-  it('offers a CSV export of exactly the current filters and sort', async () => {
+  it('offers an Excel export of exactly the current filters and sort', async () => {
     mockApi()
     renderWithProviders(<EmployeesPage />, { route: '/employees?country=IN&sort=salary&direction=desc&page=2' })
     await screen.findByText('Priya Sharma')
 
-    expect(screen.getByRole('link', { name: /Export CSV/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Export to Excel/ })).toHaveAttribute(
       'href',
       '/api/v1/employees/export?country=IN&sort=salary&direction=desc',
     )
@@ -109,9 +109,9 @@ describe('EmployeesPage', () => {
     await screen.findByText('Priya Sharma')
 
     expect(screen.queryByRole('button', { name: /Add employee/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Import CSV/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Import from Excel/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Edit Priya Sharma' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Delete Priya Sharma' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Export CSV/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Export to Excel/ })).toBeInTheDocument()
   })
 })

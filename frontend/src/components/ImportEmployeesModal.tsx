@@ -1,6 +1,6 @@
 import { Alert, Button, FileInput, Group, Modal, ScrollArea, Stack, Table, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconFileTypeCsv } from '@tabler/icons-react'
+import { IconFileSpreadsheet } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useImportEmployees } from '../api/hooks'
 import { formatNumber } from '../lib/format'
@@ -36,7 +36,7 @@ export function ImportEmployeesModal({ opened, onClose }: Props) {
   }
 
   return (
-    <Modal opened={opened} onClose={close} title="Import employees from CSV" size="lg" centered>
+    <Modal opened={opened} onClose={close} title="Import employees from Excel" size="lg" centered>
       <Stack>
         <Text size="sm">
           Rows are matched on <b>email</b>: a known email updates that employee, a new one adds an employee. Every row is
@@ -44,18 +44,19 @@ export function ImportEmployeesModal({ opened, onClose }: Props) {
         </Text>
         <Stack gap={4}>
           <Text size="xs" c="dimmed">
-            Columns: {COLUMNS}. Currency is optional and checked against the country.
+            Easiest: <b>Export to Excel</b>, edit the workbook, save it (keep it as .xlsx) and import it here.
           </Text>
           <Text size="xs" c="dimmed">
-            Dates as YYYY-MM-DD. Tip: export first, edit in Excel, save as “CSV UTF-8”, then import it back.
+            Columns: {COLUMNS}. Currency is optional and checked against the country. A .csv with the same columns
+            also works (dates as YYYY-MM-DD).
           </Text>
         </Stack>
 
         <FileInput
-          label="CSV file"
-          placeholder="Choose a .csv file"
-          accept=".csv,text/csv"
-          leftSection={<IconFileTypeCsv size={18} />}
+          label="Excel file"
+          placeholder="Choose an .xlsx file"
+          accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          leftSection={<IconFileSpreadsheet size={18} />}
           value={file}
           onChange={(next) => {
             setFile(next)

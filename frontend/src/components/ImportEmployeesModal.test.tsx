@@ -9,7 +9,8 @@ async function uploadFile() {
   const onClose = vi.fn()
   renderWithProviders(<ImportEmployeesModal opened onClose={onClose} />)
   const input = document.querySelector<HTMLInputElement>('input[type="file"]')!
-  await user.upload(input, new File(['email,full_name\n'], 'employees.csv', { type: 'text/csv' }))
+  const xlsx = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  await user.upload(input, new File(['PK'], 'acme-employees.xlsx', { type: xlsx }))
   await user.click(screen.getByRole('button', { name: 'Import' }))
   return { onClose }
 }
