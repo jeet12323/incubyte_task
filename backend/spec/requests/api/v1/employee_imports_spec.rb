@@ -38,3 +38,21 @@ RSpec.describe "Employee import", type: :request do
     expect(response).to have_http_status(:bad_request)
   end
 end
+
+RSpec.describe "Employee import of an exported workbook", type: :request do
+  before { sign_in }
+
+  it "round-trips: export, re-upload the same .xlsx, nothing changes" do
+    create_list(:employee, 2)
+    get "/api/v1/employees/export"
+    workbook = response.body
+
+    post "/api/v1/employees/import", params: {
+      file: Rack::Test::UploadedFile.new(StringIO.new(workbook), EmployeeSpreadsheet::CONTENT_TYPE,
+                                         original_filename: "acme-employees.xlsx")
+    }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["data"]).to include("unchanged" => 2, "updated" => 0, "created" => 0)
+  end
+end

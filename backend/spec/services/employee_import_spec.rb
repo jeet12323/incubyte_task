@@ -46,7 +46,7 @@ RSpec.describe EmployeeImport do
     expect(result.errors).to contain_exactly(
       { row: 3, email: "bad@acme.test", messages: [
         "Salary must be a number like 85000 or 85000.50",
-        "Hire date must be a date in YYYY-MM-DD format",
+        "Hire date must be a date in YYYY-MM-DD format. Excel changes dates when it saves CSV, so import the .xlsx export instead",
         "Full name can't be blank",
         "Country code is not a supported country"
       ] },
@@ -73,5 +73,87 @@ RSpec.describe EmployeeImport do
     expect { described_class.new(header).call }.to raise_error(EmployeeImport::InvalidFile, /no employee rows/)
     expect { described_class.new(header + "a,\"b\n").call }.to raise_error(EmployeeImport::InvalidFile, /not a valid CSV/)
     expect { described_class.new("email\xFF".b).call }.to raise_error(EmployeeImport::InvalidFile, /CSV UTF-8/)
+  end
+end
+
+RSpec.describe EmployeeImport, "with Excel workbooks" do
+  def exported_workbook(scope = Employee.all)
+    EmployeeSpreadsheet.generate(scope)
+  end
+
+  # Builds an .xlsx the way a user editing in Excel would leave it: typed cells, any column order.
+  def workbook_with(rows, headers: EmployeeSpreadsheet::HEADERS)
+    package = Axlsx::Package.new
+    package.workbook.add_worksheet(name: "Sheet1") do |sheet|
+      sheet.add_row headers
+      rows.each { |row| sheet.add_row row }
+    end
+    package.to_stream.read
+  end
+
+  it "imports its own export back with nothing changed" do
+    create_list(:employee, 3)
+
+    result = described_class.new(exported_workbook).call
+
+    expect(result.to_h).to include(created: 0, updated: 0, unchanged: 3, error_count: 0)
+  end
+
+  it "applies a salary edited in the exported workbook" do
+    employee = create(:employee, salary: 60_000, country_code: "US")
+    edited = Roo::Excelx.new(StringIO.new(exported_workbook)).sheet(0).row(2)
+    edited[6] = 72_500.5
+
+    result = described_class.new(workbook_with([ edited ])).call
+
+    expect(result.updated).to eq(1)
+    expect(employee.reload.salary).to eq(72_500.5)
+  end
+
+  it "reads real date cells regardless of how Excel displays them" do
+    workbook = workbook_with([ [ "a@acme.test", "A Person", "Analyst", "Finance", "IN", "INR", 1_850_000,
+                                 "Full-time", Date.new(2025, 12, 12) ] ])
+
+    described_class.new(workbook).call
+
+    expect(Employee.find_by(email: "a@acme.test")).to have_attributes(hire_date: Date.new(2025, 12, 12),
+                                                                      salary: 1_850_000)
+  end
+
+  it "reports errors with Excel row numbers and skips blank rows" do
+    workbook = workbook_with([
+      [ "ok@acme.test", "Ok Person", "Analyst", "Finance", "US", "USD", 50_000, "full_time", Date.new(2024, 1, 1) ],
+      [ nil, nil, nil, nil, nil, nil, nil, nil, nil ],
+      [ "bad@acme.test", "Bad Person", "Analyst", "Finance", "US", "USD", 50_000, "full_time", "12-12-2025" ]
+    ])
+
+    result = described_class.new(workbook).call
+
+    expect(Employee.count).to eq(0)
+    expect(result.errors).to eq([ { row: 4, email: "bad@acme.test",
+                                    messages: [ "Hire date must be a date in YYYY-MM-DD format" ] } ])
+  end
+
+  it "keeps formula-looking names as text through a round trip" do
+    create(:employee, email: "x@acme.test", full_name: "=HYPERLINK(1)")
+    workbook = exported_workbook
+    Employee.delete_all
+
+    described_class.new(workbook).call
+
+    expect(Employee.find_by(email: "x@acme.test").full_name).to eq("=HYPERLINK(1)")
+  end
+
+  it "asks for .xlsx when given an old .xls file, and rejects a damaged workbook" do
+    expect { described_class.new("\xD0\xCF\x11\xE0rest".b).call }
+      .to raise_error(EmployeeImport::InvalidFile, /old \.xls file/)
+    expect { described_class.new("PK\x03\x04not really a zip".b).call }
+      .to raise_error(EmployeeImport::InvalidFile, /couldn't be read/)
+  end
+
+  it "requires the same columns as a CSV" do
+    workbook = workbook_with([ [ "a@acme.test" ] ], headers: [ "email" ])
+
+    expect { described_class.new(workbook).call }.to raise_error(EmployeeImport::InvalidFile, /Missing columns/)
   end
 end
