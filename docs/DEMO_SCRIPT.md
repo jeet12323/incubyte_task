@@ -15,10 +15,10 @@
    - Try a future hire date: blocked on the client.
    - Add a new employee with a new job title (Autocomplete accepts new titles), then delete them
      (confirmation dialog).
-5. **CSV round trip (60s).**
-   - With the India filter on, click **Export CSV** and open the file in Excel: only the filtered rows,
-     in the same order.
-   - Change one salary, break another (type `abc`), save as CSV, and **Import CSV**: nothing is saved,
+5. **Excel round trip (60s).**
+   - With the India filter on, click **Export to Excel** and open the file: only the filtered rows, in
+     the same order, with readable columns, a frozen header and dates as YYYY-MM-DD.
+   - Change one salary, break another (type `abc`), save, and **Import from Excel**: nothing is saved,
      and the dialog lists the broken row by its Excel row number.
    - Fix it and import again: "0 added, 1 updated, … unchanged".
 6. **Insights (50s).**
@@ -27,7 +27,7 @@
    - "What does a Senior Software Engineer earn in India?" Read min / median / max.
    - Payroll by department chart.
 7. **Roles (20s).** Sign out and sign in as `viewer@acme.test`: the same data, but no Add, Edit, Delete
-   or Import. Export still works. (The API returns 403 too, not just the UI.)
+   or Import. Export to Excel still works. (The API returns 403 too, not just the UI.)
 8. **Engineering (45s).** Requirements doc, commit history, `rspec` + `npm test` running in seconds,
    the SQL-aggregate insights, the all-or-nothing import, the deterministic seeder, one Docker image on
    Render.

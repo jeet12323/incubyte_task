@@ -54,8 +54,9 @@ Composite index `(country_code, job_title)` backs the most common insight query.
 - **`SalaryInsights`** (query object): pure SQL aggregates — `COUNT`, `MIN`, `MAX`, `AVG`,
   `percentile_cont(0.5)` for the median, USD conversion via a `CASE` built from the country config.
   One query per insight, regardless of row count.
-- **`EmployeeCsv` / `EmployeeImport`** (services): one CSV format shared by export and import, so an
-  exported file can be edited in Excel and imported back. See [CSV import & export](#csv-import--export).
+- **`EmployeeSpreadsheet` / `EmployeeImport`** (services): one Excel workbook format shared by export
+  and import, so an exported file can be edited in Excel and imported back. See
+  [Excel import & export](#excel-import--export).
 - **Errors:** 401 `{error}` when signed out; 403 for a viewer trying to write; 404 `{error}`;
   422 `{errors: {field: [messages]}}`; 400 for bad params.
 
@@ -64,8 +65,8 @@ Composite index `(country_code, job_title)` backs the most common insight query.
 |--------|------|---------|
 | GET | /employees?q=&country=&department=&job_title=&sort=&direction=&page=&per_page= | list |
 | GET/POST/PATCH/DELETE | /employees(/:id) | CRUD (writes: HR Manager only) |
-| GET | /employees/export?…same filters and sort… | CSV download |
-| POST | /employees/import (multipart `file`) | CSV import (HR Manager only) |
+| GET | /employees/export?…same filters and sort… | Excel (.xlsx) download |
+| POST | /employees/import (multipart `file`, .xlsx or .csv) | Import (HR Manager only) |
 | GET/POST/DELETE | /session | current user / sign in / sign out |
 | GET | /insights/countries | per-country stats |
 | GET | /insights/countries/:code/job_titles | per-title stats in a country |
@@ -91,22 +92,33 @@ Composite index `(country_code, job_title)` backs the most common insight query.
   and listed on the login page, because the hosted demo has fictional data and reviewers need to get in.
   A real deployment would use the company's SSO and create no demo accounts.
 
-## CSV import & export
+## Excel import & export
+- **Why .xlsx and not CSV.** The first version exported CSV. When HR opened it in Excel and saved it,
+  Excel rewrote every hire date in the user's locale (`2024-03-01` came back as `12-12-2025`-style
+  text), and the import rightly rejected the file. A CSV also can't carry column widths, so the date
+  column showed `####`. A real workbook fixes both: export and import use the same `.xlsx` file.
+- **One column definition** (`EmployeeSpreadsheet::COLUMNS`: header, width, cell type) drives the
+  export and the importer's required headers, so the two can't drift apart.
 - **Export** (`GET /employees/export`) applies exactly the directory's filters and sort (no paging) and
-  streams `pluck`ed columns, so all 10k rows come back in ~0.2 s. Cells starting with `=`, `+`, `-`
-  or `@` are prefixed with `'` so Excel doesn't run them as formulas (CSV injection). Import strips
-  that prefix again, so a round trip is lossless.
-- **Import** (`POST /employees/import`, HR Manager only) matches rows on email: a known email updates
-  that employee, a new email creates one. It is **all-or-nothing**: every row is validated with the same
-  model validations as the form, plus checks for duplicate emails within the file, a currency that
-  doesn't match the country, and unambiguous formats (`YYYY-MM-DD` dates, plain numbers). If any row
-  fails, nothing is written and the response lists errors by spreadsheet row number (header = row 1).
-  HR fixes the file and uploads it again, and never has to work out which half was applied.
-- It accepts what Excel produces: a UTF-8 byte-order mark, `
-` line endings, `18,50,000`-style
-  thousands separators, and "Full-time" as well as `full_time`. A non-UTF-8 file gets a clear
-  "save as CSV UTF-8" message.
-- Writes are one transaction: `insert_all!` for new rows, `upsert_all` by id for changed rows, and
+  writes `pluck`ed columns with caxlsx. Hire dates are real date cells formatted `yyyy-mm-dd`, salaries
+  are numbers (`#,##0.00`), every column has a readable width, the header row is frozen and filters
+  are on. Text cells are explicitly typed as text, so a name like `=HYPERLINK(…)` is never evaluated
+  as a formula.
+- **Import** (`POST /employees/import`, HR Manager only) detects an `.xlsx` by its content (a zip
+  signature), not its file name, and reads it with roo. Typed cells become the same text a CSV cell
+  would hold (date cells → `YYYY-MM-DD`), so validation is shared. Blank rows are skipped and errors
+  keep Excel's row numbers. CSV with the same columns is still accepted for other tools. Its date error
+  explains that Excel rewrites CSV dates and points to the `.xlsx` export. Old binary `.xls` files and
+  damaged workbooks get clear messages.
+- **All-or-nothing:** every row is validated with the same model validations as the form, plus
+  duplicate emails within the file, a currency that doesn't match the country, and unambiguous formats
+  (ISO dates, plain numbers). If any row fails, nothing is written and the response lists errors by
+  spreadsheet row number (header = row 1). HR fixes the file and uploads it again, and never has to
+  work out which half was applied. Rows match on email: known emails update, new emails create.
+- **CSV leniency** (for files from other tools): a UTF-8 byte-order mark, Windows line endings,
+  `18,50,000`-style thousands separators, and "Full-time" as well as `full_time`. A non-UTF-8 file gets
+  a clear "save as CSV UTF-8" message.
+- **Writes** are one transaction: `insert_all!` for new rows, `upsert_all` by id for changed rows, and
   unchanged rows are skipped. Existing employees are loaded in one query. The per-row email uniqueness
   query is skipped because the importer matches on email itself, and the unique index still guards the
   table. Limits: 5 MB, 20,000 rows.
@@ -126,8 +138,8 @@ Rows are inserted with `insert_all` in batches of 1,000.
 | Single service | Separate static host + API | Simpler deploy, no CORS, one URL in the demo. |
 | Cookie session + `has_secure_password` | JWT in `localStorage`, Devise, SSO | Same origin, so an httpOnly cookie is simpler and safer than a token JS can read. Devise brings far more than two roles need. SSO is the real-world answer and the next step. |
 | Two fixed roles on `users.role` | Permissions table / Pundit | Two roles with one rule ("only managers write") fit in one `before_action`. Add a policy layer when rules depend on the record (e.g. by country). |
-| All-or-nothing CSV import | Import valid rows, skip bad ones | A half-applied salary file is worse than a rejected one. HR fixes the listed rows and re-uploads. |
-| CSV | Native `.xlsx` | Excel opens and saves CSV directly; no extra gem, and the format is easy to test. |
+| All-or-nothing import | Import valid rows, skip bad ones | A half-applied salary file is worse than a rejected one. HR fixes the listed rows and re-uploads. |
+| `.xlsx` (caxlsx + roo) | CSV | Started with CSV; Excel rewrote its dates on save and CSV can't hold column widths or types. Two gems are worth a file that survives a round trip through Excel. CSV is still accepted on import. |
 
 ## Performance notes
 Measured locally on the 10,000-employee seed (development mode, single request, warm):
@@ -141,8 +153,8 @@ Measured locally on the 10,000-employee seed (development mode, single request, 
 | `GET /insights/countries` (incl. median per country) | 52 ms |
 | `GET /insights/countries/IN/job_titles` | 37 ms |
 | `GET /insights/departments` / `summary` / `meta` | 22–25 ms |
-| `GET /employees/export` (all 10,001 rows, ~1 MB CSV) | ~220 ms |
-| `POST /employees/import` of that full export (validate 10,001 rows, nothing changed) | ~2.3 s |
+| `GET /employees/export` (all 10,001 rows, ~455 KB .xlsx) | ~2 s |
+| `POST /employees/import` of that full export (read + validate 10,001 rows, nothing changed) | ~6.7 s (about 3 s of it is reading the workbook) |
 
 Why it stays fast:
 - Every insight is a single aggregate query (`GROUP BY` + `PERCENTILE_CONT`). Ruby never loads the rows.
@@ -162,7 +174,8 @@ search, and caching or materializing the insight aggregates (they only change wh
    limited to their own country) would need a policy layer.
 3. **Part-time pay skews ranges.** Part-time salaries are stored pro-rated, so they pull down role
    minimums. Add an FTE-adjusted view or a full-time-only filter on Insights.
-4. **Large imports run in the request.** Fine at 10k rows (~2-3 s). At 100k+ they should move to a
-   background job with progress reporting.
+4. **Large files are handled in the request.** A full 10k-row workbook takes ~2 s to export and
+   ~7 s to import. Fine for an occasional HR task, but beyond ~20k rows both should move to a
+   background job with progress reporting (and a streaming xlsx reader).
 5. **FX rates** are fixed in `config/countries.yml`. If finance needs historical accuracy, store
    rates with an effective date.

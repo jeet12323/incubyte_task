@@ -24,7 +24,7 @@ data, must not be able to change it.
 | 5 | **Department insights** — headcount and payroll cost (USD) by department | "Where does our money go?" |
 | 6 | **Seed data** — deterministic script generating 10,000 realistic employees | Realistic demo + performance check |
 | 7 | **Sign-in and roles** — email + password sign-in; HR Managers can change data, Viewers are read-only (enforced by the API, not just hidden in the UI) | Salary data is the most sensitive data HR holds; nobody should see it anonymously |
-| 8 | **CSV export & import** — export exactly the filtered list; import a CSV that creates or updates employees by email, all-or-nothing, with row-numbered errors | Gets HR off Excel: data moves in and out in a format Excel opens, and a bad file can't half-apply |
+| 8 | **Excel export & import** — export exactly the filtered list as an .xlsx; import that same workbook (or a CSV) to create or update employees by email, all-or-nothing, with row-numbered errors | Gets HR off hand-maintained spreadsheets: data moves in and out of Excel without being mangled, and a bad file can't half-apply |
 
 **Currency rule:** salaries are stored in the employee's local currency (the currency is derived
 from the country, so it cannot be inconsistent). Cross-country totals are converted to USD with a
@@ -38,7 +38,7 @@ fixed, versioned rate table so results are reproducible.
 | Salary history, audit trail, approval workflows | Valuable, but the brief is about managing current salaries and answering questions about them. The schema leaves room for a `salary_changes` table. |
 | Payroll run, taxes, bonuses, equity | That's a payroll system, not salary management. |
 | Live exchange rates | Static rates keep insight numbers stable and testable. Rates are in one config file. |
-| Native `.xlsx` files | Excel opens and saves CSV directly, so CSV covers the workflow without another dependency. |
+| Multiple sheets, formulas or custom layouts in imports | One fixed sheet layout (the export's) keeps validation simple and errors precise. |
 | Org chart / managers, performance reviews | Not needed to answer pay questions. |
 
 ## Non-functional requirements

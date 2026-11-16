@@ -21,9 +21,9 @@ answer questions about how the organization pays people. It replaces the Excel w
   Filters live in the URL, so a view can be bookmarked or shared.
 - **Insights:** org headcount and USD payroll; per-country min / median / average / max in local
   currency; job-title benchmarks within a country; payroll by department.
-- **CSV export & import:** export exactly the filtered list; import a CSV (e.g. edited in Excel) that
-  creates or updates employees by email. Nothing is saved if any row is invalid, and the errors are
-  listed by spreadsheet row.
+- **Excel export & import:** export exactly the filtered list as an `.xlsx` (dates, widths and number
+  formats set), edit it in Excel and import it back to create or update employees by email. Nothing is
+  saved if any row is invalid, and the errors are listed by spreadsheet row. CSV is accepted too.
 - **Sign-in & roles:** every API call needs a signed-in user. HR Managers can change data; Viewers
   can only read and export. The API enforces this, not just the UI.
 
@@ -56,7 +56,7 @@ the users table and the demo accounts without touching employees.
 ## Tests
 
 ```bash
-cd backend && bundle exec rspec       # 111 examples: models, queries, seeder, CSV import, auth, request specs
+cd backend && bundle exec rspec       # 122 examples: models, queries, seeder, Excel/CSV import, auth, request specs
 cd frontend && npm test               # 39 tests: API client, sign-in, form, import dialog, pages
 ```
 
@@ -78,7 +78,7 @@ no CORS. On the free plan the service sleeps after ~15 min idle, so the first re
 
 ```
 backend/   Rails API: app/models (Employee, User, Country), app/queries (EmployeeSearch, SalaryInsights),
-           app/services (EmployeeSeeder, EmployeeImport, EmployeeCsv, DemoAccounts),
+           app/services (EmployeeSeeder, EmployeeImport, EmployeeSpreadsheet, DemoAccounts),
            app/controllers/api/v1, spec/
 frontend/  React app: src/api (typed client + hooks), src/auth (sign-in, roles), src/components, src/pages
 docs/      Requirements, design, AI workflow, demo script
