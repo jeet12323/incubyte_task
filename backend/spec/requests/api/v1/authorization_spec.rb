@@ -6,7 +6,7 @@ RSpec.describe "API access control", type: :request do
   context "when not signed in" do
     it "rejects every API endpoint with 401" do
       [ "/api/v1/employees", "/api/v1/employees/#{employee.id}", "/api/v1/meta",
-        "/api/v1/insights/summary" ].each do |path|
+        "/api/v1/insights/summary", "/api/v1/employees/export" ].each do |path|
         get path
         expect(response).to have_http_status(:unauthorized), "expected 401 for #{path}"
       end
@@ -28,7 +28,7 @@ RSpec.describe "API access control", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "cannot create, update or delete employees" do
+    it "cannot create, update, delete or import employees" do
       post "/api/v1/employees", params: { employee: { full_name: "X" } }
       expect(response).to have_http_status(:forbidden)
 
@@ -38,6 +38,8 @@ RSpec.describe "API access control", type: :request do
       delete "/api/v1/employees/#{employee.id}"
       expect(response).to have_http_status(:forbidden)
 
+      post "/api/v1/employees/import", params: { file: Rack::Test::UploadedFile.new(StringIO.new("email\n"), "text/csv", original_filename: "x.csv") }
+      expect(response).to have_http_status(:forbidden)
 
       expect(employee.reload.salary).not_to eq(1)
     end

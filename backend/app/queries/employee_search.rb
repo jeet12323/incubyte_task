@@ -14,8 +14,13 @@ class EmployeeSearch
     @params = params.to_h.symbolize_keys
   end
 
+  # Filtered, searched and sorted, but not paginated (used by the CSV export).
+  def scope
+    sorted(searched(filtered(Employee.all)))
+  end
+
   def call
-    scope = sorted(searched(filtered(Employee.all)))
+    scope = self.scope
     total_count = scope.count
 
     Result.new(

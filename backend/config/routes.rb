@@ -4,7 +4,12 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resource :session, only: %i[show create destroy]
-      resources :employees, only: %i[index show create update destroy]
+      resources :employees, only: %i[index show create update destroy] do
+        collection do
+          get :export, to: "employee_exports#show"
+          post :import, to: "employee_imports#create"
+        end
+      end
       resource :meta, only: :show, controller: :meta
 
       scope :insights, controller: :insights, as: :insights do

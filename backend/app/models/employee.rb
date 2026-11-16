@@ -9,6 +9,10 @@ class Employee < ApplicationRecord
        { full_time: "full_time", part_time: "part_time", contract: "contract" },
        validate: true
 
+  # The CSV importer matches rows to employees by email itself, so it skips the
+  # one-query-per-row uniqueness check. The unique index still guards the table.
+  attr_accessor :skip_email_uniqueness_check
+
   normalizes :email, with: ->(email) { email.strip.downcase }
   normalizes :country_code, with: ->(code) { code.strip.upcase }
   normalizes :full_name, :job_title, with: ->(value) { value.squish }
@@ -16,7 +20,7 @@ class Employee < ApplicationRecord
   validates :full_name, :job_title, :hire_date, presence: true
   validates :email, presence: true,
                     format: { with: URI::MailTo::EMAIL_REGEXP },
-                    uniqueness: { case_sensitive: false }
+                    uniqueness: { case_sensitive: false, unless: :skip_email_uniqueness_check }
   validates :department, presence: true, inclusion: { in: DEPARTMENTS, allow_blank: true }
   validates :country_code, presence: true
   validates :salary, presence: true,
