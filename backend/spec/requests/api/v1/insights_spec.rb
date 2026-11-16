@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Insights API", type: :request do
+  before { sign_in }
+
   let(:json) { response.parsed_body }
 
   before do

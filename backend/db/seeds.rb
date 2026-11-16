@@ -1,4 +1,7 @@
-# Seeds a deterministic workforce. Override the size with: SEED_COUNT=500 bin/rails db:seed
+# Demo sign-in accounts (see DemoAccounts), then a deterministic workforce.
+# Override the workforce size with: SEED_COUNT=500 bin/rails db:seed
+DemoAccounts.ensure!
+
 count = Integer(ENV.fetch("SEED_COUNT", 10_000))
 started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 

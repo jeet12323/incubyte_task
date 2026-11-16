@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Meta API", type: :request do
+  before { sign_in }
+
   it "returns reference data for filters and forms" do
     create(:employee, job_title: "Data Analyst")
     create(:employee, job_title: "Accountant")

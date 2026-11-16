@@ -4,6 +4,7 @@ module Api
       PERMITTED_ATTRIBUTES = %i[full_name email job_title department country_code
                                 salary employment_type hire_date].freeze
 
+      before_action :require_editor, only: %i[create update destroy]
       before_action :set_employee, only: %i[show update destroy]
 
       def index

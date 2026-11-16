@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Employees API", type: :request do
+  before { sign_in }
+
   let(:json) { response.parsed_body }
 
   describe "GET /api/v1/employees" do

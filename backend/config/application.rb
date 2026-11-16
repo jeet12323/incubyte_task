@@ -40,5 +40,15 @@ module Backend
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # The React app is served from this same origin, so a signed-in HR user gets an
+    # encrypted, httpOnly session cookie. SameSite=Lax means other sites can't make the
+    # browser send it on cross-site POST/PATCH/DELETE requests.
+    config.session_store :cookie_store,
+                         key: "_acme_salaries_session",
+                         same_site: :lax,
+                         expire_after: 12.hours
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use config.session_store, config.session_options
   end
 end
