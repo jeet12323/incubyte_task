@@ -1,4 +1,7 @@
-import type { Employee, Meta } from '../api/types'
+import type { Employee, Meta, User } from '../api/types'
+
+export const hrManager: User = { id: 1, name: 'Hannah Reed', email: 'hr@acme.test', role: 'hr_manager', can_edit: true }
+export const viewer: User = { id: 2, name: 'Victor Shah', email: 'viewer@acme.test', role: 'viewer', can_edit: false }
 
 export const meta: Meta = {
   countries: [

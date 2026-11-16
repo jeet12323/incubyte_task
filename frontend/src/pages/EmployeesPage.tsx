@@ -1,13 +1,16 @@
 import { Alert, Button, Center, Drawer, Group, Loader, Modal, Pagination, Paper, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconPlus } from '@tabler/icons-react'
+import { IconDownload, IconPlus, IconUpload } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { api } from '../api/client'
 import { useDeleteEmployee, useEmployees, useMeta, useSaveEmployee } from '../api/hooks'
+import { useCurrentUser } from '../auth/currentUser'
 import type { Employee, EmployeeQuery } from '../api/types'
 import { EmployeeFilters, type FilterValues } from '../components/EmployeeFilters'
 import { EmployeeForm } from '../components/EmployeeForm'
 import { EmployeeTable, type SortState } from '../components/EmployeeTable'
+import { ImportEmployeesModal } from '../components/ImportEmployeesModal'
 import { formatNumber } from '../lib/format'
 
 const PER_PAGE = 25
@@ -30,12 +33,14 @@ export function EmployeesPage() {
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const query: EmployeeQuery = { ...filters, ...sort, page, per_page: PER_PAGE }
 
+  const { can_edit: canEdit } = useCurrentUser()
   const employees = useEmployees(query)
   const meta = useMeta()
   const saveEmployee = useSaveEmployee()
   const deleteEmployee = useDeleteEmployee()
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' })
   const [pendingDelete, setPendingDelete] = useState<Employee | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   function updateParams(changes: Record<string, string | number>, resetPage = true) {
     setSearchParams((current) => {
@@ -76,9 +81,28 @@ export function EmployeesPage() {
             {totalCount === undefined ? 'Loading…' : `${formatNumber(totalCount)} employees`}
           </Text>
         </div>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setEditor({ mode: 'create' })} disabled={!meta.data}>
-          Add employee
-        </Button>
+        <Group gap="xs">
+          <Button
+            component="a"
+            href={api.exportUrl(query)}
+            download
+            variant="default"
+            leftSection={<IconDownload size={16} />}
+            title="Download every employee matching the current filters as CSV"
+          >
+            Export CSV
+          </Button>
+          {canEdit && (
+            <>
+              <Button variant="default" leftSection={<IconUpload size={16} />} onClick={() => setImportOpen(true)}>
+                Import CSV
+              </Button>
+              <Button leftSection={<IconPlus size={16} />} onClick={() => setEditor({ mode: 'create' })} disabled={!meta.data}>
+                Add employee
+              </Button>
+            </>
+          )}
+        </Group>
       </Group>
 
       <EmployeeFilters meta={meta.data} values={filters} onChange={(changes) => updateParams(changes)} />
@@ -101,6 +125,7 @@ export function EmployeesPage() {
             employees={employees.data.data}
             sort={sort}
             onSortChange={(next) => updateParams({ ...next })}
+            canEdit={canEdit}
             onEdit={(employee) => setEditor({ mode: 'edit', employee })}
             onDelete={setPendingDelete}
           />
@@ -135,6 +160,8 @@ export function EmployeesPage() {
           />
         )}
       </Drawer>
+
+      <ImportEmployeesModal opened={importOpen} onClose={() => setImportOpen(false)} />
 
       <Modal opened={pendingDelete !== null} onClose={() => setPendingDelete(null)} title="Delete employee?" centered>
         <Text size="sm">

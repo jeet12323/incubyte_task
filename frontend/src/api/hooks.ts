@@ -3,6 +3,7 @@ import { api } from './client'
 import type { EmployeeInput, EmployeeQuery } from './types'
 
 export const queryKeys = {
+  session: ['session'] as const,
   employees: (query: EmployeeQuery) => ['employees', query] as const,
   meta: ['meta'] as const,
   insights: ['insights'] as const,
@@ -70,4 +71,38 @@ export function useSaveEmployee() {
 export function useDeleteEmployee() {
   const invalidate = useInvalidateSalaryData()
   return useMutation({ mutationFn: (id: number) => api.deleteEmployee(id), onSuccess: invalidate })
+}
+
+export function useImportEmployees() {
+  const invalidate = useInvalidateSalaryData()
+  return useMutation({
+    mutationFn: (file: File) => api.importEmployees(file),
+    onSuccess: (result) => (result.error_count === 0 ? invalidate() : undefined),
+  })
+}
+
+/** The signed-in user (null when signed out). Loaded once and shared by the whole app. */
+export function useSession() {
+  return useQuery({ queryKey: queryKeys.session, queryFn: api.currentUser, staleTime: Infinity })
+}
+
+export function useSignIn() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) => api.signIn(email, password),
+    onSuccess: ({ data }) => queryClient.setQueryData(queryKeys.session, data),
+  })
+}
+
+export function useSignOut() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.signOut,
+    onSettled: () => {
+      // Show the sign-in screen first, then drop every cached salary response so nothing is
+      // left in memory for the next person.
+      queryClient.setQueryData(queryKeys.session, null)
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== queryKeys.session[0] })
+    },
+  })
 }

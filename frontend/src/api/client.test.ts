@@ -52,3 +52,42 @@ describe('api', () => {
     await expect(api.deleteEmployee(1)).resolves.toBeUndefined()
   })
 })
+
+describe('session and CSV', () => {
+  it('returns null for the current user when signed out', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Please sign in' }, 401))
+
+    await expect(api.currentUser()).resolves.toBeNull()
+  })
+
+  it('sends the session cookie with every request', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ data: {} }))
+
+    await api.meta()
+
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ credentials: 'same-origin' })
+  })
+
+  it('builds the export link from the filters and sort, without paging', () => {
+    expect(api.exportUrl({ country: 'IN', sort: 'salary', direction: 'desc', page: 3, per_page: 25, q: '' })).toBe(
+      '/api/v1/employees/export?country=IN&sort=salary&direction=desc',
+    )
+  })
+
+  it('uploads the file as multipart and returns row errors from a rejected import', async () => {
+    const result = {
+      created: 0,
+      updated: 0,
+      unchanged: 0,
+      error_count: 1,
+      errors: [{ row: 2, email: 'a@acme.test', messages: ['Bad salary'] }],
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ data: result }, 422))
+
+    await expect(api.importEmployees(new File(['email\n'], 'e.csv'))).resolves.toEqual(result)
+
+    const init = fetchMock.mock.calls[0][1]!
+    expect(init.body).toBeInstanceOf(FormData)
+    expect(init.headers).not.toHaveProperty('Content-Type')
+  })
+})

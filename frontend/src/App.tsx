@@ -3,6 +3,8 @@ import { useDisclosure } from '@mantine/hooks'
 import { IconChartBar, IconCoin, IconUsers } from '@tabler/icons-react'
 import { lazy, Suspense } from 'react'
 import { Navigate, NavLink as RouterNavLink, Route, Routes } from 'react-router-dom'
+import { AuthGate } from './auth/AuthGate'
+import { UserMenu } from './auth/UserMenu'
 import { EmployeesPage } from './pages/EmployeesPage'
 
 // The charting library is heavy; only load it when the HR manager opens Insights.
@@ -14,6 +16,14 @@ const NAV_ITEMS = [
 ]
 
 export default function App() {
+  return (
+    <AuthGate>
+      <AppLayout />
+    </AuthGate>
+  )
+}
+
+function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure()
 
   return (
@@ -23,12 +33,15 @@ export default function App() {
       padding="lg"
     >
       <AppShell.Header>
-        <Group h="100%" px="md" gap="sm">
+        <Group h="100%" px="md" gap="sm" wrap="nowrap">
           <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Toggle navigation" />
           <ThemeIcon variant="light" size="lg">
             <IconCoin size={20} />
           </ThemeIcon>
           <Text fw={700}>ACME Salaries</Text>
+          <Group ml="auto">
+            <UserMenu />
+          </Group>
         </Group>
       </AppShell.Header>
 

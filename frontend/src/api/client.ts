@@ -4,10 +4,12 @@ import type {
   Employee,
   EmployeeInput,
   EmployeeQuery,
+  ImportResult,
   JobTitleInsight,
   Meta,
   PageMeta,
   Summary,
+  User,
 } from './types'
 
 export type FieldErrors = Record<string, string[]>
@@ -37,14 +39,19 @@ export function toQueryString(params: object): string {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // FormData uploads set their own multipart Content-Type; everything else is JSON.
+  const contentType: Record<string, string> = typeof init.body === 'string' ? { 'Content-Type': 'application/json' } : {}
   const response = await fetch(`${BASE_PATH}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...init.headers },
+    credentials: 'same-origin', // send the session cookie
+    headers: { ...contentType, Accept: 'application/json', ...init.headers },
   })
 
   if (response.status === 204) return undefined as T
 
   const body = await response.json().catch(() => ({}))
+  // An import with invalid rows is a normal outcome: return the row errors instead of throwing.
+  if (response.status === 422 && body.data?.error_count) return body as T
   if (!response.ok) {
     const fieldErrors: FieldErrors = body.errors ?? {}
     const message = body.error ?? (Object.keys(fieldErrors).length ? 'Please fix the highlighted fields' : 'Something went wrong')
@@ -54,6 +61,21 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  /** The signed-in user, or null when nobody is signed in. */
+  currentUser: () =>
+    request<{ data: User }>('/session').then(
+      (r) => r.data,
+      (error: unknown) => {
+        if (error instanceof ApiError && error.status === 401) return null
+        throw error
+      },
+    ),
+
+  signIn: (email: string, password: string) =>
+    request<{ data: User }>('/session', { method: 'POST', body: JSON.stringify({ email, password }) }),
+
+  signOut: () => request<void>('/session', { method: 'DELETE' }),
+
   listEmployees: (query: EmployeeQuery) =>
     request<{ data: Employee[]; meta: PageMeta }>(`/employees${toQueryString(query)}`),
 
@@ -64,6 +86,16 @@ export const api = {
     request<{ data: Employee }>(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify({ employee: input }) }),
 
   deleteEmployee: (id: number) => request<void>(`/employees/${id}`, { method: 'DELETE' }),
+
+  /** Download link for the directory's current filters and sort (no paging: every matching row). */
+  exportUrl: (query: EmployeeQuery) =>
+    `${BASE_PATH}/employees/export${toQueryString({ ...query, page: undefined, per_page: undefined })}`,
+
+  importEmployees: (file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return request<{ data: ImportResult }>('/employees/import', { method: 'POST', body }).then((r) => r.data)
+  },
 
   meta: () => request<{ data: Meta }>('/meta'),
 

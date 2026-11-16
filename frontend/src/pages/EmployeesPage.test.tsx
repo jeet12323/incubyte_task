@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { buildEmployee, meta } from '../test/fixtures'
+import { buildEmployee, meta, viewer } from '../test/fixtures'
 import { jsonResponse, renderWithProviders } from '../test/render'
 import { EmployeesPage } from './EmployeesPage'
 
@@ -90,5 +90,28 @@ describe('EmployeesPage', () => {
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/v1/employees/1', expect.objectContaining({ method: 'DELETE' })),
     )
+  })
+
+  it('offers a CSV export of exactly the current filters and sort', async () => {
+    mockApi()
+    renderWithProviders(<EmployeesPage />, { route: '/employees?country=IN&sort=salary&direction=desc&page=2' })
+    await screen.findByText('Priya Sharma')
+
+    expect(screen.getByRole('link', { name: /Export CSV/ })).toHaveAttribute(
+      'href',
+      '/api/v1/employees/export?country=IN&sort=salary&direction=desc',
+    )
+  })
+
+  it('is read-only for viewers', async () => {
+    mockApi()
+    renderWithProviders(<EmployeesPage />, { user: viewer })
+    await screen.findByText('Priya Sharma')
+
+    expect(screen.queryByRole('button', { name: /Add employee/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Import CSV/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit Priya Sharma' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete Priya Sharma' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Export CSV/ })).toBeInTheDocument()
   })
 })

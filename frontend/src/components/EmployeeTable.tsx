@@ -12,6 +12,8 @@ interface Props {
   employees: Employee[]
   sort: SortState
   onSortChange: (sort: SortState) => void
+  /** Viewers get a read-only table without edit/delete actions. */
+  canEdit: boolean
   onEdit: (employee: Employee) => void
   onDelete: (employee: Employee) => void
 }
@@ -47,7 +49,7 @@ function SortableHeader({
   )
 }
 
-export function EmployeeTable({ employees, sort, onSortChange, onEdit, onDelete }: Props) {
+export function EmployeeTable({ employees, sort, onSortChange, canEdit, onEdit, onDelete }: Props) {
   const headerProps = { sort, onSortChange }
 
   return (
@@ -62,7 +64,7 @@ export function EmployeeTable({ employees, sort, onSortChange, onEdit, onDelete 
             <SortableHeader column="salary" label="Annual salary" align="right" {...headerProps} />
             <Table.Th>Type</Table.Th>
             <SortableHeader column="hire_date" label="Hired" {...headerProps} />
-            <Table.Th aria-label="Actions" />
+            {canEdit && <Table.Th aria-label="Actions" />}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -100,21 +102,23 @@ export function EmployeeTable({ employees, sort, onSortChange, onEdit, onDelete 
                 </Badge>
               </Table.Td>
               <Table.Td>{formatDate(employee.hire_date)}</Table.Td>
-              <Table.Td>
-                <Group gap={4} justify="flex-end" wrap="nowrap">
-                  <ActionIcon variant="subtle" aria-label={`Edit ${employee.full_name}`} onClick={() => onEdit(employee)}>
-                    <IconPencil size={16} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    color="red"
-                    aria-label={`Delete ${employee.full_name}`}
-                    onClick={() => onDelete(employee)}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-              </Table.Td>
+              {canEdit && (
+                <Table.Td>
+                  <Group gap={4} justify="flex-end" wrap="nowrap">
+                    <ActionIcon variant="subtle" aria-label={`Edit ${employee.full_name}`} onClick={() => onEdit(employee)}>
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      aria-label={`Delete ${employee.full_name}`}
+                      onClick={() => onDelete(employee)}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                </Table.Td>
+              )}
             </Table.Tr>
           ))}
         </Table.Tbody>

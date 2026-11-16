@@ -3,8 +3,8 @@
 module DemoAccounts
   PASSWORD = "acme-demo-2026".freeze
   ACCOUNTS = [
-    { name: "Hannah Reed (HR Manager)", email: "hr@acme.test", role: "hr_manager" },
-    { name: "Victor Shah (Viewer)", email: "viewer@acme.test", role: "viewer" }
+    { name: "Hannah Reed", email: "hr@acme.test", role: "hr_manager" },
+    { name: "Victor Shah", email: "viewer@acme.test", role: "viewer" }
   ].freeze
 
   module_function

@@ -86,3 +86,28 @@ export interface DepartmentInsight {
   total_payroll_usd: number
   avg_salary_usd: number
 }
+
+export type Role = 'hr_manager' | 'viewer'
+
+export interface User {
+  id: number
+  name: string
+  email: string
+  role: Role
+  can_edit: boolean
+}
+
+export interface ImportRowError {
+  row: number
+  email: string
+  messages: string[]
+}
+
+/** Result of a CSV import. When error_count > 0 nothing was saved. */
+export interface ImportResult {
+  created: number
+  updated: number
+  unchanged: number
+  errors: ImportRowError[]
+  error_count: number
+}
