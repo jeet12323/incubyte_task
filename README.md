@@ -3,7 +3,8 @@
 A web app for ACME's HR Manager to manage the salaries of 10,000 employees in 8 countries, and to
 answer questions about how the organization pays people. It replaces the Excel workbooks.
 
-- **Live app:** _add Render URL after deploy_
+- **Live app:** https://acme-salaries.onrender.com (free plan: the first request after it has been
+  idle can take up to a minute while the service wakes up)
 - **Demo video:** _add link after recording_ ([demo script](docs/DEMO_SCRIPT.md))
 - **Demo sign-in** (fictional data): `hr@acme.test` (HR Manager) or `viewer@acme.test` (read-only),
   password `acme-demo-2026`. Both accounts are also listed on the login page.
@@ -68,8 +69,13 @@ Both suites run in a few seconds and don't need network access. CI runs both on 
 1. Push this repository to GitHub.
 2. In Render: **New → Blueprint**, then select the repo. `render.yaml` creates the Postgres
    database and the Docker web service and wires up `DATABASE_URL` and `SECRET_KEY_BASE`.
-3. On first boot the container runs migrations, creates the demo accounts and seeds 10,000 employees.
-   Later deploys keep the data (missing demo accounts are re-created; existing ones are left alone).
+3. On first boot the container runs migrations, creates the demo accounts and seeds 10,000 employees
+   (~10 s on Render's free plan). Later deploys keep the data (missing demo accounts are re-created;
+   existing ones are left alone).
+
+The live app was created from the public repository URL, so Render does not deploy on push: use
+**Manual Deploy → Deploy latest commit** after pushing. Connecting the GitHub account to Render
+turns on auto-deploy.
 
 The Docker image builds the React app and serves it from Rails, so everything is on one URL with
 no CORS. On the free plan the service sleeps after ~15 min idle, so the first request can take ~30-60s.
