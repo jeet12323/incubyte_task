@@ -10,33 +10,47 @@ countries with a web app. The HR Manager should be able to **keep salary records
 Common questions: *"What do we pay a Software Engineer in India?"*, *"Which country is our biggest
 payroll cost?"*, *"Is this new offer in line with what peers in the same role and country earn?"*
 
-**HR Viewer** (e.g. an HR business partner or finance analyst): needs to look up and export salary
-data, must not be able to change it.
+**HR Viewer** (optional, e.g. an HR business partner or finance analyst): needs to look up and export
+salary data, must not be able to change it.
 
 ## Scope & features
 
 | # | Feature | Why it matters |
 |---|---------|----------------|
 | 1 | **Employee directory** — browse 10k employees with server-side pagination, search by name/email, filter by country / department / job title, sort by salary, name or hire date | Replaces scrolling and filtering in Excel; must stay fast at 10k rows |
-| 2 | **Manage salary records** — add, view, edit, delete an employee (name, email, job title, department, country, annual salary, employment type, hire date) with validation | Core "manage salaries" job; validation stops the typos Excel lets through |
+| 2 | **Manage salary records** — add, view, edit, delete an employee (name, email, job title, department, country, annual gross base salary, employment type, hire date) with validation | Core "manage salaries" job; validation stops the typos Excel lets through |
 | 3 | **Country insights** — per country: headcount, min / max / average / median salary in local currency, plus total payroll in USD | "How do we pay people in X?" |
 | 4 | **Job title insights within a country** — min / max / average / median per job title | Benchmarking an offer or a raise against peers |
 | 5 | **Department insights** — headcount and payroll cost (USD) by department | "Where does our money go?" |
 | 6 | **Seed data** — deterministic script generating 10,000 realistic employees | Realistic demo + performance check |
+| | *Optional, built only after 1-6 were complete and tested:* | |
 | 7 | **Sign-in and roles** — email + password sign-in; HR Managers can change data, Viewers are read-only (enforced by the API, not just hidden in the UI) | Salary data is the most sensitive data HR holds; nobody should see it anonymously |
 | 8 | **Excel export & import** — export exactly the filtered list as an .xlsx; import that same workbook (or a CSV) to create or update employees by email, all-or-nothing, with row-numbered errors | Gets HR off hand-maintained spreadsheets: data moves in and out of Excel without being mangled, and a bad file can't half-apply |
 
-**Currency rule:** salaries are stored in the employee's local currency (the currency is derived
-from the country, so it cannot be inconsistent). Cross-country totals are converted to USD with a
-fixed, versioned rate table so results are reproducible.
+**Currency rule:** a salary is the annual gross base pay, stored in the employee's local currency
+(the currency is derived from the country, so it cannot be inconsistent). Cross-country totals are
+converted to USD with a fixed, dated rate table so results are reproducible. Every converted figure
+is labelled "USD, converted" (or shown with ≈), and the Insights page lists the rates and their date.
+
+## Decisions confirmed with Incubyte
+I asked before finalising scope. The answers confirmed these decisions:
+
+| Question | Answer | Decision |
+|----------|--------|----------|
+| Who uses it? | One HR Manager persona is enough; a read-only Viewer is optional | HR Manager is the primary persona; the Viewer role was kept because salary data is sensitive and it is small |
+| What is "salary"? | Annual gross base salary, local currency; bonuses and allowances out | Labelled exactly that in the form and docs |
+| Cross-country comparison? | Static USD rate table is fine; document it and label converted values | Dated rate table, labelled figures, rates shown in the UI |
+| Salary history / audit? | Current salary is sufficient | Left out (see below) |
+| Which insights? | Min / max / average / median by country and job title; department payroll is useful | All of these are built |
+| Excel import / export? | Optional; core management first | Built last, after the core was done and tested |
 
 ## Deliberately left out (and why)
 
 | Left out | Reason |
 |----------|--------|
 | SSO, user management screens, password reset | Two roles and seeded accounts are enough to show the access rules. A real rollout would sign in through the company's SSO rather than manage passwords here. |
-| Salary history, audit trail, approval workflows | Valuable, but the brief is about managing current salaries and answering questions about them. The schema leaves room for a `salary_changes` table. |
-| Payroll run, taxes, bonuses, equity | That's a payroll system, not salary management. |
+| Salary history, audit trail, approval workflows | Confirmed as not needed: current salary records are enough. It is the first v2 feature, and the schema leaves room for a `salary_changes` table. |
+| Payroll run, taxes, bonuses, allowances, equity | Salary means annual gross base pay (confirmed). The rest belongs to a payroll system, not salary management. |
 | Live exchange rates | Static rates keep insight numbers stable and testable. Rates are in one config file. |
 | Multiple sheets, formulas or custom layouts in imports | One fixed sheet layout (the export's) keeps validation simple and errors precise. |
 | Org chart / managers, performance reviews | Not needed to answer pay questions. |
