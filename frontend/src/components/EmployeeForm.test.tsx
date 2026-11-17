@@ -37,7 +37,7 @@ describe('EmployeeForm', () => {
     await user.type(screen.getByRole('textbox', { name: 'Job title' }), 'Data Analyst')
     await pickOption(user, 'Department', 'Engineering')
     await pickOption(user, 'Country', 'India')
-    await user.type(screen.getByRole('textbox', { name: /Annual salary/ }), '1800000')
+    await user.type(screen.getByRole('textbox', { name: /Annual gross base salary/ }), '1800000')
     await user.type(screen.getByLabelText(/Hire date/), '2024-03-01')
     await user.click(screen.getByRole('button', { name: 'Add employee' }))
 
@@ -56,7 +56,7 @@ describe('EmployeeForm', () => {
   it("labels the salary with the selected country's currency", async () => {
     renderForm({ employee: buildEmployee({ country_code: 'IN' }) })
 
-    expect(screen.getByRole('textbox', { name: 'Annual salary (INR)' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Annual gross base salary (INR)' })).toBeInTheDocument()
   })
 
   it('pre-fills values when editing', () => {

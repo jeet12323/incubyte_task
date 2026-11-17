@@ -80,8 +80,8 @@ export function EmployeeForm({ meta, employee, onSubmit, onCancel }: Props) {
           {...form.getInputProps('country_code')}
         />
         <NumberInput
-          label={currency ? `Annual salary (${currency})` : 'Annual salary'}
-          description="In the employee's local currency"
+          label={currency ? `Annual gross base salary (${currency})` : 'Annual gross base salary'}
+          description="Before tax, in the employee's local currency. Excludes bonuses and allowances."
           withAsterisk
           min={0}
           thousandSeparator=","
