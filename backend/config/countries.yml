@@ -1,7 +1,7 @@
 # Countries ACME employs people in.
 # usd_rate = USD per 1 unit of local currency. Fixed on purpose so insight numbers are reproducible;
 # update deliberately (and note the date) rather than fetching live rates.
-# Rates as of 2026-11-01.
+# Rates as of 2026-11-01: keep Country::RATES_AS_OF in sync when changing them.
 - { code: US, name: United States,  currency: USD, usd_rate: 1.0 }
 - { code: GB, name: United Kingdom, currency: GBP, usd_rate: 1.27 }
 - { code: DE, name: Germany,        currency: EUR, usd_rate: 1.08 }

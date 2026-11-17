@@ -22,3 +22,6 @@ Country = Data.define(:code, :name, :currency, :usd_rate) do
     (amount * usd_rate).round
   end
 end
+
+# The date the rates in config/countries.yml were taken. Shown next to every converted figure.
+Country::RATES_AS_OF = Date.new(2026, 11, 1)

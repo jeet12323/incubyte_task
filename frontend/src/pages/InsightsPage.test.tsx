@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { meta } from '../test/fixtures'
 import { jsonResponse, renderWithProviders } from '../test/render'
 import { InsightsPage } from './InsightsPage'
 
@@ -9,6 +10,7 @@ const stats = { min_salary: 1000000, max_salary: 6000000, avg_salary: 2450000, m
 function mockApi() {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = String(input)
+    if (url.endsWith('/meta')) return jsonResponse({ data: meta })
     if (url.endsWith('/insights/summary')) return jsonResponse({ data: { headcount: 10000, countries: 8, total_payroll_usd: 766136897 } })
     if (url.endsWith('/insights/countries'))
       return jsonResponse({
@@ -32,6 +34,16 @@ describe('InsightsPage', () => {
 
     expect(await screen.findByText('10,000')).toBeInTheDocument()
     expect(screen.getByText('$766.1M')).toBeInTheDocument()
+  })
+
+  it('labels converted figures and lists the fixed rates behind them', async () => {
+    mockApi()
+    renderWithProviders(<InsightsPage />)
+
+    expect(await screen.findByText('Annual payroll (USD, converted)')).toBeInTheDocument()
+    expect(await screen.findByText(/Fixed rates as of 1 Nov 2026/)).toBeInTheDocument()
+    expect(screen.getByText('1 INR = 0.012 USD')).toBeInTheDocument()
+    expect(screen.queryByText(/1 USD =/)).not.toBeInTheDocument()
   })
 
   it('shows per-country stats in local currency', async () => {

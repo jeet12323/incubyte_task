@@ -5,7 +5,8 @@ module Api
       def show
         render json: {
           data: {
-            countries: Country.all.map { |c| { code: c.code, name: c.name, currency: c.currency } },
+            countries: Country.all.map { |c| { code: c.code, name: c.name, currency: c.currency, usd_rate: c.usd_rate } },
+            exchange_rates_as_of: Country::RATES_AS_OF.iso8601,
             departments: Employee::DEPARTMENTS,
             employment_types: Employee.employment_types.keys,
             job_titles: Employee.distinct.order(:job_title).pluck(:job_title)

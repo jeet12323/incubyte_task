@@ -1,9 +1,9 @@
 import { Alert, Card, Group, Loader, Paper, Select, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core'
 import { BarChart } from '@mantine/charts'
 import { useState } from 'react'
-import { useCountryInsights, useDepartmentInsights, useJobTitleInsights, useSummary } from '../api/hooks'
-import type { CountryInsight } from '../api/types'
-import { formatCompactUsd, formatMoney, formatNumber } from '../lib/format'
+import { useCountryInsights, useDepartmentInsights, useJobTitleInsights, useMeta, useSummary } from '../api/hooks'
+import type { CountryInsight, Meta } from '../api/types'
+import { formatCompactUsd, formatDate, formatMoney, formatNumber } from '../lib/format'
 
 function StatCard({ label, value }: { label: string; value: string | undefined }) {
   return (
@@ -38,6 +38,7 @@ function QueryState({ isPending, error }: { isPending: boolean; error: Error | n
 
 export function InsightsPage() {
   const summary = useSummary()
+  const meta = useMeta()
   const countries = useCountryInsights()
   const departments = useDepartmentInsights()
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
@@ -50,15 +51,15 @@ export function InsightsPage() {
       <div>
         <Title order={2}>Salary insights</Title>
         <Text c="dimmed" size="sm">
-          Local-currency figures stay in each country's currency. Totals across countries are converted to USD at fixed
-          rates.
+          Salaries are annual gross base pay in each country's own currency. Figures marked <b>USD, converted</b> add up
+          pay across countries using the fixed exchange rates listed at the bottom of this page.
         </Text>
       </div>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <StatCard label="Headcount" value={summary.data && formatNumber(summary.data.headcount)} />
         <StatCard label="Countries" value={summary.data && formatNumber(summary.data.countries)} />
-        <StatCard label="Annual payroll (USD)" value={summary.data && formatCompactUsd(summary.data.total_payroll_usd)} />
+        <StatCard label="Annual payroll (USD, converted)" value={summary.data && formatCompactUsd(summary.data.total_payroll_usd)} />
       </SimpleGrid>
 
       <Section title="Pay by country" description="How much people earn in each country. Click a row to see job titles.">
@@ -109,21 +110,50 @@ export function InsightsPage() {
         )}
       </Section>
 
-      <Section title="Payroll by department" description="Annual payroll cost per department, in USD.">
+      <Section
+        title="Payroll by department"
+        description="Annual payroll cost per department, converted to USD at the fixed rates below."
+      >
         <QueryState isPending={departments.isPending} error={departments.error} />
         {departments.data && (
           <BarChart
             h={320}
             data={departments.data}
             dataKey="department"
-            series={[{ name: 'total_payroll_usd', label: 'Payroll (USD)', color: 'indigo.6' }]}
+            series={[{ name: 'total_payroll_usd', label: 'Payroll (USD, converted)', color: 'indigo.6' }]}
             valueFormatter={formatCompactUsd}
             tickLine="y"
             xAxisProps={{ interval: 0, angle: -20, textAnchor: 'end', height: 60 }}
           />
         )}
       </Section>
+
+      {meta.data && <ExchangeRates meta={meta.data} />}
     </Stack>
+  )
+}
+
+function ExchangeRates({ meta }: { meta: Meta }) {
+  const rates = new Map<string, number>()
+  for (const country of meta.countries) {
+    if (country.currency !== 'USD') rates.set(country.currency, country.usd_rate)
+  }
+
+  return (
+    <Paper withBorder p="md" bg="var(--mantine-color-gray-light)">
+      <Title order={5}>Exchange rates used for USD figures</Title>
+      <Text size="sm" c="dimmed" mb="xs">
+        Fixed rates as of {formatDate(meta.exchange_rates_as_of)}, not live market rates, so the numbers stay the same
+        from one day to the next. Local-currency figures are never converted.
+      </Text>
+      <Group gap="lg">
+        {[...rates].map(([currency, rate]) => (
+          <Text key={currency} size="sm">
+            1 {currency} = {rate} USD
+          </Text>
+        ))}
+      </Group>
+    </Paper>
   )
 }
 
@@ -146,7 +176,7 @@ function CountryTable({
             <Table.Th ta="right">Median</Table.Th>
             <Table.Th ta="right">Average</Table.Th>
             <Table.Th ta="right">Range</Table.Th>
-            <Table.Th ta="right">Payroll (USD)</Table.Th>
+            <Table.Th ta="right">Payroll (USD, converted)</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>

@@ -10,7 +10,8 @@ RSpec.describe "Meta API", type: :request do
     get "/api/v1/meta"
 
     data = response.parsed_body["data"]
-    expect(data["countries"]).to include("code" => "IN", "name" => "India", "currency" => "INR")
+    expect(data["countries"]).to include("code" => "IN", "name" => "India", "currency" => "INR", "usd_rate" => 0.012)
+    expect(data["exchange_rates_as_of"]).to eq("2026-11-01")
     expect(data["departments"]).to include("Engineering", "Sales")
     expect(data["employment_types"]).to eq(%w[full_time part_time contract])
     expect(data["job_titles"]).to eq([ "Accountant", "Data Analyst" ])

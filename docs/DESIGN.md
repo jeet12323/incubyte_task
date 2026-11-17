@@ -43,7 +43,9 @@ render.yaml
 
 **Countries are configuration, not a table.** `config/countries.yml` holds code, name, currency and
 a USD rate. A `Country` value object reads it. Currency is derived from the country, so an employee
-can never have "India + EUR". Adding a country is a one-line config change with a test.
+can never have "India + EUR". Adding a country is a one-line config change with a test. The rates
+carry a date (`Country::RATES_AS_OF`), and `/meta` returns both, so the Insights page can show
+exactly which rates produced each "USD, converted" figure.
 
 Composite index `(country_code, job_title)` backs the most common insight query.
 
@@ -71,7 +73,7 @@ Composite index `(country_code, job_title)` backs the most common insight query.
 | GET | /insights/countries | per-country stats |
 | GET | /insights/countries/:code/job_titles | per-title stats in a country |
 | GET | /insights/departments | headcount + USD payroll per department |
-| GET | /meta | countries, departments, job titles for dropdowns |
+| GET | /meta | countries (with USD rate), rate date, departments, job titles for dropdowns |
 
 ## Authentication & roles
 - **Session cookie, not tokens.** The SPA is served from the same origin as the API, so sign-in sets an

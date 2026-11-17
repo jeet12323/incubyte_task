@@ -86,7 +86,7 @@ export function EmployeeTable({ employees, sort, onSortChange, canEdit, onEdit, 
                   {formatMoney(employee.salary, employee.currency)}
                 </Text>
                 {employee.currency !== 'USD' && (
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" c="dimmed" title="Converted to USD at a fixed exchange rate (see Insights)">
                     ≈ {formatMoney(employee.salary_usd, 'USD')}
                   </Text>
                 )}

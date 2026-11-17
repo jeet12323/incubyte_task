@@ -5,9 +5,10 @@ export const viewer: User = { id: 2, name: 'Victor Shah', email: 'viewer@acme.te
 
 export const meta: Meta = {
   countries: [
-    { code: 'IN', name: 'India', currency: 'INR' },
-    { code: 'US', name: 'United States', currency: 'USD' },
+    { code: 'IN', name: 'India', currency: 'INR', usd_rate: 0.012 },
+    { code: 'US', name: 'United States', currency: 'USD', usd_rate: 1 },
   ],
+  exchange_rates_as_of: '2026-11-01',
   departments: ['Engineering', 'Sales'],
   employment_types: ['full_time', 'part_time', 'contract'],
   job_titles: ['Account Executive', 'Software Engineer'],

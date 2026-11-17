@@ -44,10 +44,14 @@ export interface CountryOption {
   code: string
   name: string
   currency: string
+  /** USD per 1 unit of local currency, from the fixed rate table. */
+  usd_rate: number
 }
 
 export interface Meta {
   countries: CountryOption[]
+  /** ISO date the fixed exchange rates were taken. */
+  exchange_rates_as_of: string
   departments: string[]
   employment_types: EmploymentType[]
   job_titles: string[]
