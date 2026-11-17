@@ -5,7 +5,8 @@ answer questions about how the organization pays people. It replaces the Excel w
 
 - **Live app:** https://acme-salaries.onrender.com (free plan: the first request after it has been
   idle can take up to a minute while the service wakes up)
-- **Demo video:** _add link after recording_ ([demo script](docs/DEMO_SCRIPT.md))
+- **Demo video:** https://drive.google.com/file/d/1eNCXkLJRiasWKWugq-fidaLeD0ONIPDT/view?usp=sharing
+  ([demo script](docs/DEMO_SCRIPT.md))
 - **Demo sign-in** (fictional data): `hr@acme.test` (HR Manager) or `viewer@acme.test` (read-only),
   password `acme-demo-2026`. Both accounts are also listed on the login page.
 
